@@ -25,19 +25,27 @@ IS_WINDOWS = PLATFORM.startswith("win")
 IS_X86 = MACHINE in ("x86_64", "amd64")
 
 class BuildExt(build_ext):
-    def build_extension(self, ext):
-        super().build_extension(ext)
-
-        ext_path = Path(self.get_ext_fullpath(ext.name)).resolve()
-        ext_dir = ext_path.parent
+    def _copy_runtime_libs(self, ext_dir):
+        ext_dir = Path(ext_dir)
+        ext_dir.mkdir(parents=True, exist_ok=True)
 
         if IS_WINDOWS:
             shutil.copy2(LIBS / "fftw3f.dll", ext_dir / "fftw3f.dll")
 
         elif IS_LINUX:
-            # Loader wants the ELF SONAME names, not this repo's custom filenames.
+            # The bundled ELF libraries advertise their upstream SONAMEs.
             shutil.copy2(LIBS / "libfftw3fl.so", ext_dir / "libfftw3f.so.3")
             shutil.copy2(LIBS / "libfftw3f_ompl.so", ext_dir / "libfftw3f_omp.so.3")
+
+    def build_extension(self, ext):
+        super().build_extension(ext)
+
+        ext_path = Path(self.get_ext_fullpath(ext.name)).resolve()
+        self._copy_runtime_libs(ext_path.parent)
+
+        if self.inplace:
+            package_dir = Path(self.get_ext_fullpath(ext.name)).parent
+            self._copy_runtime_libs(package_dir)
 
 
 # Obtain the numpy include directory.  This logic works across numpy versions.
@@ -48,6 +56,7 @@ except AttributeError:
 
 include_dirs = ["src/fcwt", "src", "libs", numpy.get_include()]
 library_dirs = ["libs"]
+runtime_library_dirs = []
 libraries = []
 link_args = []
 files2 = [
@@ -81,15 +90,18 @@ if IS_MACOS:
         omp_prefix = Path("/usr/local/opt/libomp")
 
     include_dirs.append(str(omp_prefix / "include"))
-    libraries.append(str(omp_prefix / "lib"))
+    library_dirs.append(str(omp_prefix / "lib"))
     link_args = [
+        "-L" + str(omp_prefix / "lib"),
+        "-lomp",
         "-Wl,-rpath," + str(omp_prefix / "lib"),
     ]
 
 if IS_LINUX:
     libraries = ["fftw3fl", "fftw3f_ompl", "gomp"]
     comp_args = ["-mavx", "-O3", "-fopenmp"]
-    link_args = ["-fopenmp"]
+    runtime_library_dirs = ["$ORIGIN"]
+    link_args = ["-fopenmp", "-Wl,-rpath,$ORIGIN"]
 
 
 if IS_WINDOWS:
@@ -104,6 +116,7 @@ setup(
             sources=["src/fcwt/fcwt.cpp", "src/fcwt/fcwt_wrap.cxx"],
             include_dirs=include_dirs,
             library_dirs=library_dirs,
+            runtime_library_dirs=runtime_library_dirs,
             libraries=libraries,
             extra_compile_args=comp_args,
             extra_link_args=link_args,
