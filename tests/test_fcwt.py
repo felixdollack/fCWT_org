@@ -1,8 +1,6 @@
 from fcwt import *
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-#import timeit
 
 def cwt2(x,fs,f0,f1,fn):
     
