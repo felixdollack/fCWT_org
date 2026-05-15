@@ -80,7 +80,7 @@ plat = sysconfig.get_platform()
 machine = platform.machine().lower()
 
 if IS_MACOS:
-    libraries = ["fftw3fmac", "fftw3f_ompmac", "omp"]
+    libraries = ["fftw3fmac", "fftw3f_ompmac"]
     comp_args = ["-O3", "-Xpreprocessor", "-fopenmp"]
 
     # Only Intel can use AVX.
@@ -93,9 +93,10 @@ if IS_MACOS:
 
     include_dirs.append(str(omp_prefix / "include"))
     library_dirs.append(str(omp_prefix / "lib"))
+    omp_library = str(omp_prefix / "lib" / "libomp.dylib")
     link_args = [
         "-L" + str(omp_prefix / "lib"),
-        "-lomp",
+        "-Wl,-needed_library," + omp_library,
         "-Wl,-rpath," + str(omp_prefix / "lib"),
     ]
 
