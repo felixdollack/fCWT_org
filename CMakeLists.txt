@@ -44,6 +44,13 @@ endif()
 # set the project name
 project(fCWT VERSION 2.0 DESCRIPTION "Highly optimized implementation of the Continuous Wavelet Transform")
 
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" FCWT_SYSTEM_PROCESSOR)
+if(FCWT_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|i[3-6]86)$")
+    set(FCWT_ENABLE_AVX ON)
+else()
+    set(FCWT_ENABLE_AVX OFF)
+endif()
+
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -53,9 +60,15 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 
 if(UNIX)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mavx -O2")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O2")
+    if(FCWT_ENABLE_AVX)
+	    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+    endif()
 elseif(WIN32)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /arch:AVX /O2 /W1")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /O2 /W1")
+    if(FCWT_ENABLE_AVX)
+	    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
+    endif()
 endif()
 
 #set cmake linker flags
