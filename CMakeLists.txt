@@ -292,6 +292,29 @@ if(UNIX)
 	endif()
 endif()
 
+if(UNIX AND NOT APPLE AND NOT USE_OWN_FFTW)
+    set_target_properties(${fcwt_library_target} fCWT_example
+        PROPERTIES
+        BUILD_RPATH "$ORIGIN"
+    )
+
+    if(BUILD_BENCHMARK)
+        set_target_properties(fCWT_benchmark
+            PROPERTIES
+            BUILD_RPATH "$ORIGIN"
+        )
+    endif()
+
+    add_custom_command(TARGET ${fcwt_library_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${PROJECT_SOURCE_DIR}/libs/libfftw3fl.so"
+            "${PROJECT_BINARY_DIR}/libfftw3f.so.3"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${PROJECT_SOURCE_DIR}/libs/libfftw3f_ompl.so"
+            "${PROJECT_BINARY_DIR}/libfftw3f_omp.so.3"
+    )
+endif()
+
 if(BUILD_BENCHMARK)
     if (NOT WAVELIB)
         message(SEND_ERROR "Did not find wavelib. Please note that you need to install wavelib yourself. See README.md for more information.")
