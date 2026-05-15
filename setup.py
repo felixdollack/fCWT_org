@@ -4,6 +4,7 @@
 setup.py file for SWIG
 """
 
+import platform
 from setuptools import Extension, setup, find_packages
 import sysconfig
 import numpy
@@ -36,14 +37,17 @@ files = [
 files = files + files2
 
 if "macosx" in sysconfig.get_platform() or "darwin" in sysconfig.get_platform():
-    libraries = ['fftw3fmac','fftw3f_ompmac']
-    comp_args = ["-mavx","-O3"]
-    link_args = ["-lomp"]
+    libraries = ['fftw3fmac','fftw3f_ompmac','omp']
+    comp_args = ["-O3","-Xpreprocessor","-fopenmp"]
+
+    # Only Intel can use AVX.
+    if platform.machine().lower() in ("x86_64", "amd64"):
+        comp_args.append("-mavx")
 
 if "linux" in sysconfig.get_platform():
-    libraries = ['fftw3fl','fftw3f_ompl']
-    comp_args = ["-mavx","-O3"]
-    link_args = ["-lomp"]
+    libraries = ['fftw3fl','fftw3f_ompl',"gomp"]
+    comp_args = ["-mavx","-O3","-fopenmp"]
+    link_args = ["-fopenmp"]
 
 
 setup (ext_modules=[
