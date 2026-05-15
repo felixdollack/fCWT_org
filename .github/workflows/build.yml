@@ -44,6 +44,28 @@ jobs:
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
         shell: powershell
 
+      - name: Build and install Wavelib (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          git clone https://github.com/rafat/wavelib.git /tmp/wavelib
+          cd /tmp/wavelib
+          mkdir build && cd build
+          cmake ..
+          cmake --build . --config Release
+          sudo cmake --install . --prefix /usr/local
+
+      - name: Build and install Wavelib (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          git clone https://github.com/rafat/wavelib.git C:\wavelib
+          cd C:\wavelib
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --config Release
+          cmake --install . --prefix "C:\Program Files\wavelib"
+        shell: powershell
+
       - name: Create build directory
         run: mkdir -p build
 
