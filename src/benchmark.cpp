@@ -30,7 +30,11 @@ static void show_usage(std::string name)
               << "\t-fcwt\t\t Run fCWT benchmark for N samples and K threads\n"
               << "\t-fcwtoptimize\t Calculate fCWT optimization plan for N samples, K threads using specified optimization method\n"
               << "\t-rwave\t\t Run Rwave benchmark for N samples\n"
+#ifdef FCWT_WITH_WAVELIB
               << "\t-wavelib\t Run Wavelib benchmark for N samples\n"
+#else
+              << "\t-wavelib\t Run Wavelib benchmark for N samples (not available in this build)\n"
+#endif
     << "Optimization methods (when method= -fcwtoptimize):\n"
     << "\t-estimate\t Fast but low performance\n"
     << "\t-measure\t Medium fast and medium performance performance\n"
@@ -308,6 +312,7 @@ int main(int argc, char * argv[]) {
         show_stats(times,runs);
     }
     if(algorithm=="-wavelib") {
+#ifdef FCWT_WITH_WAVELIB
         
         //WAVELIB
         cout << "=========== BENCHMARKING WAVELIB ============" << endl;
@@ -326,6 +331,10 @@ int main(int argc, char * argv[]) {
         cout << endl;
         cout << algorithm << " on sig1 with length N: " << size;
         show_stats(times,runs);
+#else
+        cerr << "ERROR: Wavelib benchmark is not available in this build." << endl;
+        return 1;
+#endif
     }
     
     delete sig1;

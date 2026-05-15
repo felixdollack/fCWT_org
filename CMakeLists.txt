@@ -100,7 +100,6 @@ set(benchmarksources
     "./src/benchmark.cpp"
     "./src/fcwt/fcwt.cpp"
     "./src/rwave-bench.cpp"
-    "./src/wavelib-bench.cpp"
 )
 
 set(headers ${libraryheaders} ${implementationheaders})
@@ -275,7 +274,6 @@ if(BUILD_BENCHMARK)
     find_library (
         WAVELIB
         NAMES wavelib libwavelib # what to look for
-        REQUIRED
     )
 endif()
 
@@ -336,10 +334,12 @@ if(UNIX AND NOT APPLE AND NOT USE_OWN_FFTW)
 endif()
 
 if(BUILD_BENCHMARK)
-    if (NOT WAVELIB)
-        message(SEND_ERROR "Did not find wavelib. Please note that you need to install wavelib yourself. See README.md for more information.")
-    else()
+    if(WAVELIB)
+        target_sources(fCWT_benchmark PRIVATE "./src/wavelib-bench.cpp")
+        target_compile_definitions(fCWT_benchmark PRIVATE FCWT_WITH_WAVELIB)
         target_link_libraries(fCWT_benchmark PRIVATE ${WAVELIB})
+    else()
+        message(WARNING "Did not find wavelib. Building fCWT_benchmark without -wavelib support.")
     endif()
 endif()
 
