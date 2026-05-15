@@ -5,6 +5,7 @@ setup.py file for SWIG
 """
 
 import numpy
+import os
 from pathlib import Path
 import platform
 from setuptools import Extension, setup, find_packages
@@ -25,32 +26,28 @@ IS_LINUX = PLATFORM.startswith("linux")
 IS_WINDOWS = PLATFORM.startswith("win")
 IS_X86 = MACHINE in ("x86_64", "amd64")
 
+if IS_MACOS:
+    os.environ.setdefault("ARCHFLAGS", f"-arch {MACHINE}")
+
 class BuildExt(build_ext):
-    def _copy_runtime_libs(self, ext_dir):
-        ext_dir = Path(ext_dir)
-        ext_dir.mkdir(parents=True, exist_ok=True)
+    def _copy_runtime_libs(self):
+        PACKAGE_DIR.mkdir(parents=True, exist_ok=True)
 
         if IS_WINDOWS:
-            shutil.copy2(LIBS / "fftw3f.dll", ext_dir / "fftw3f.dll")
+            shutil.copy2(LIBS / "fftw3f.dll", PACKAGE_DIR / "fftw3f.dll")
 
         elif IS_LINUX:
             # The bundled ELF libraries advertise their upstream SONAMEs.
-            shutil.copy2(LIBS / "libfftw3fl.so", ext_dir / "libfftw3f.so.3")
-            shutil.copy2(LIBS / "libfftw3f_ompl.so", ext_dir / "libfftw3f_omp.so.3")
-
-    def _copy_all_runtime_locations(self, ext):
-        ext_path = Path(self.get_ext_fullpath(ext.name)).resolve()
-        self._copy_runtime_libs(ext_path.parent)
-        self._copy_runtime_libs(PACKAGE_DIR)
+            shutil.copy2(LIBS / "libfftw3fl.so", PACKAGE_DIR / "libfftw3f.so.3")
+            shutil.copy2(LIBS / "libfftw3f_ompl.so", PACKAGE_DIR / "libfftw3f_omp.so.3")
 
     def build_extension(self, ext):
         super().build_extension(ext)
-        self._copy_all_runtime_locations(ext)
+        self._copy_runtime_libs()
 
     def copy_extensions_to_source(self):
         super().copy_extensions_to_source()
-        for ext in self.extensions:
-            self._copy_all_runtime_locations(ext)
+        self._copy_runtime_libs()
 
 
 # Obtain the numpy include directory.  This logic works across numpy versions.
