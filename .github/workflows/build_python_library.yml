@@ -45,24 +45,6 @@ jobs:
       - name: Install package
         run: pip install -e .
 
-      - name: Inspect native extension (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          python - <<'PY'
-          import glob
-          import os
-          import sysconfig
-
-          print("platform:", sysconfig.get_platform())
-          print("ARCHFLAGS:", os.environ.get("ARCHFLAGS"))
-          for path in sorted(glob.glob("src/fcwt/*")):
-              print(path)
-          PY
-          if ls src/fcwt/_fcwt*.so >/dev/null 2>&1; then
-            file src/fcwt/_fcwt*.so
-            otool -L src/fcwt/_fcwt*.so
-          fi
-
       - name: Install test dependencies
         run: pip install pytest
 
