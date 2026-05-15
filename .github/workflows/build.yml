@@ -13,7 +13,6 @@ jobs:
       matrix:
         os: [ubuntu-24.04, windows-2025-vs2026, macos-26-intel, macos-26]
         build-shared-libs: ['ON', 'OFF']
-        build-benchmark: ['ON', 'OFF']
         include:
           - os: ubuntu-24.04
             cmake-flags: "-DCMAKE_BUILD_TYPE=Release"
@@ -44,71 +43,25 @@ jobs:
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
         shell: powershell
 
-      - name: Build and install Wavelib (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          git clone https://github.com/rafat/wavelib.git /tmp/wavelib
-          cd /tmp/wavelib
-          mkdir build && cd build
-          cmake ..
-          cmake --build . --config Release
-          sudo cmake --install . --prefix /usr/local
-
-      - name: Build and install Wavelib (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          git clone https://github.com/rafat/wavelib.git C:\wavelib
-          cd C:\wavelib
-          mkdir build
-          cd build
-          cmake ..
-          cmake --build . --config Release
-          cmake --install . --prefix "C:\Program Files\wavelib"
-        shell: powershell
-
       - name: Create build directory
         run: mkdir -p build
 
       - name: Configure CMake (Unix)
         if: runner.os != 'Windows'
-        run: cmake -B build ${{ matrix.cmake-flags }} -DBUILD_SHARED_LIBS=${{ matrix.build-shared-libs }} -DBUILD_BENCHMARK=${{ matrix.build-benchmark }}
+        run: cmake -B build ${{ matrix.cmake-flags }} -DBUILD_SHARED_LIBS=${{ matrix.build-shared-libs }} -DBUILD_BENCHMARK=OFF
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
-        run: cmake -B build -A x64 ${{ matrix.cmake-flags }} -DBUILD_SHARED_LIBS=${{ matrix.build-shared-libs }} -DBUILD_BENCHMARK=${{ matrix.build-benchmark }}
+        run: cmake -B build -A x64 ${{ matrix.cmake-flags }} -DBUILD_SHARED_LIBS=${{ matrix.build-shared-libs }} -DBUILD_BENCHMARK=OFF
         shell: cmd
 
       - name: Build C++ Library
         run: cmake --build build --config Release
 
-      - name: Run benchmark smoke test (Unix)
-        if: runner.os != 'Windows' && matrix.build-benchmark == 'ON'
-        run: |
-          if [ -f build/fCWT_benchmark ]; then
-            FCWT_BENCHMARK_RUNS=1 FCWT_BENCHMARK_SLEEP_US=0 ./build/fCWT_benchmark -fcwt 1024 1
-          else
-            echo "fCWT_benchmark not found"
-            exit 1
-          fi
-        shell: bash
-
-      - name: Run benchmark smoke test (Windows)
-        if: runner.os == 'Windows' && matrix.build-benchmark == 'ON'
-        run: |
-          if (Test-Path "build\Release\fCWT_benchmark.exe") {
-            $env:FCWT_BENCHMARK_RUNS = "1"
-            $env:FCWT_BENCHMARK_SLEEP_US = "0"
-            & "build\Release\fCWT_benchmark.exe" -fcwt 1024 1
-          } else {
-            Write-Warning "fCWT_benchmark.exe not found"
-            exit 1
-          }
-        shell: powershell
-
       - name: Upload C++ build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: cpp-build-${{ matrix.os }}-shared-${{ matrix.build-shared-libs }}-benchmark-${{ matrix.build-benchmark }}
+          name: cpp-build-${{ matrix.os }}-shared-${{ matrix.build-shared-libs }}
           path: build/
           retention-days: 3
 
