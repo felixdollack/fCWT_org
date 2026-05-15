@@ -9,6 +9,7 @@ option(BUILD_SHARED_LIBS "Build shared library?" ON)
 option(USE_OWN_FFTW "Use own FFTW installation?" OFF)
 option(BUILD_BENCHMARK "Build Benchmark?" OFF)
 option(BUILD_MATLAB "Build Matlab mex?" OFF)
+option(BUILD_PYTHON "Build Python extension?" OFF)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE OR NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING
@@ -350,6 +351,73 @@ if(WIN32)
     if(BUILD_BENCHMARK)
 	    file(COPY ${WAVELIB} DESTINATION ${PROJECT_BINARY_DIR}/Debug)
 	    file(COPY ${WAVELIB} DESTINATION ${PROJECT_BINARY_DIR}/Release)
+    endif()
+endif()
+
+if(BUILD_PYTHON)
+    find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+
+    if(NOT FCWT_PYTHON_NUMPY_INCLUDE_DIR)
+        execute_process(
+            COMMAND "${Python3_EXECUTABLE}" -c "import numpy; print(numpy.get_include())"
+            OUTPUT_VARIABLE FCWT_PYTHON_NUMPY_INCLUDE_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+
+    add_library(_fcwt MODULE
+        src/fcwt/fcwt.cpp
+        src/fcwt/fcwt_wrap.cxx
+    )
+
+    target_include_directories(_fcwt PRIVATE
+        "${PROJECT_SOURCE_DIR}/src/fcwt"
+        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/libs"
+        "${Python3_INCLUDE_DIRS}"
+        "${FCWT_PYTHON_NUMPY_INCLUDE_DIR}"
+    )
+
+    target_link_libraries(_fcwt PRIVATE ${FFTW})
+    target_link_libraries(_fcwt PRIVATE Python3::Module)
+
+    if(UNIX)
+        target_link_libraries(_fcwt PRIVATE ${FFTW_OMP})
+    endif()
+
+    if(APPLE)
+        target_include_directories(_fcwt PRIVATE ${OpenMP_INCLUDES})
+        target_link_directories(_fcwt PRIVATE ${OpenMP_LIBRARIES})
+        target_link_libraries(_fcwt PRIVATE "${OpenMP_LIBRARIES}/libomp.dylib")
+        set_target_properties(_fcwt PROPERTIES
+            LINK_FLAGS "-undefined dynamic_lookup"
+            BUILD_RPATH "${OpenMP_LIBRARIES}"
+        )
+    elseif(UNIX)
+        target_link_libraries(_fcwt PRIVATE OpenMP::OpenMP_CXX)
+        set_target_properties(_fcwt PROPERTIES
+            BUILD_RPATH "$ORIGIN"
+        )
+    elseif(WIN32)
+        target_link_libraries(_fcwt PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+
+    set_target_properties(_fcwt PROPERTIES
+        PREFIX ""
+    )
+
+    if(FCWT_PYTHON_EXTENSION_SUFFIX)
+        set_target_properties(_fcwt PROPERTIES
+            SUFFIX "${FCWT_PYTHON_EXTENSION_SUFFIX}"
+        )
+    endif()
+
+    if(FCWT_PYTHON_OUTPUT_DIR)
+        set_target_properties(_fcwt PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY "${FCWT_PYTHON_OUTPUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY "${FCWT_PYTHON_OUTPUT_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY "${FCWT_PYTHON_OUTPUT_DIR}"
+        )
     endif()
 endif()
 
