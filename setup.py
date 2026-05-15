@@ -14,6 +14,7 @@ import sysconfig
 
 ROOT = Path(__file__).parent.resolve()
 LIBS = ROOT / "libs"
+PACKAGE_DIR = ROOT / "src" / "fcwt"
 
 # Platform detection
 PLATFORM = sysconfig.get_platform()
@@ -37,15 +38,19 @@ class BuildExt(build_ext):
             shutil.copy2(LIBS / "libfftw3fl.so", ext_dir / "libfftw3f.so.3")
             shutil.copy2(LIBS / "libfftw3f_ompl.so", ext_dir / "libfftw3f_omp.so.3")
 
-    def build_extension(self, ext):
-        super().build_extension(ext)
-
+    def _copy_all_runtime_locations(self, ext):
         ext_path = Path(self.get_ext_fullpath(ext.name)).resolve()
         self._copy_runtime_libs(ext_path.parent)
+        self._copy_runtime_libs(PACKAGE_DIR)
 
-        if self.inplace:
-            package_dir = Path(self.get_ext_fullpath(ext.name)).parent
-            self._copy_runtime_libs(package_dir)
+    def build_extension(self, ext):
+        super().build_extension(ext)
+        self._copy_all_runtime_locations(ext)
+
+    def copy_extensions_to_source(self):
+        super().copy_extensions_to_source()
+        for ext in self.extensions:
+            self._copy_all_runtime_locations(ext)
 
 
 # Obtain the numpy include directory.  This logic works across numpy versions.

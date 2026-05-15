@@ -40,6 +40,34 @@ jobs:
       - name: Install package
         run: pip install -e .
 
+      - name: Inspect native extension (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import glob
+          import sysconfig
+
+          print("platform:", sysconfig.get_platform())
+          for path in sorted(glob.glob("src/fcwt/*")):
+              print(path)
+          PY
+          if ls src/fcwt/_fcwt*.so >/dev/null 2>&1; then
+            if [ "${{ runner.os }}" = "macOS" ]; then
+              otool -L src/fcwt/_fcwt*.so
+            else
+              ldd src/fcwt/_fcwt*.so || true
+              readelf -d src/fcwt/_fcwt*.so || true
+            fi
+          fi
+
+      - name: Inspect native extension (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          python -c "import glob, sysconfig; print('platform:', sysconfig.get_platform()); [print(path) for path in sorted(glob.glob('src/fcwt/*'))]"
+          Get-ChildItem src\fcwt
+
       - name: Install test dependencies
         run: pip install pytest
 
