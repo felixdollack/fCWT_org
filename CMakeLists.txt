@@ -162,7 +162,7 @@ if (OPENMP_FOUND)
     if(APPLE)
         target_include_directories(${fcwt_library_target} PUBLIC ${OpenMP_INCLUDES})
         target_link_directories(${fcwt_library_target} PUBLIC ${OpenMP_LIBRARIES})
-        target_link_libraries(${fcwt_library_target} PUBLIC "-lomp")
+        target_link_libraries(${fcwt_library_target} PUBLIC "${OpenMP_LIBRARIES}/libomp.dylib")
 
         target_link_libraries(fCWT_example PUBLIC ${fcwt_library_target})
 
