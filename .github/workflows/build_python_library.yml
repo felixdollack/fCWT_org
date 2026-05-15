@@ -2,7 +2,21 @@ name: Build Python Libraries
 
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'libs/**'
+      - 'tests/**'
+      - 'setup.py'
+      - 'pyproject.toml'
+      - '.github/workflows/build_python_library.yml'
   pull_request:
+    paths:
+      - 'src/**'
+      - 'libs/**'
+      - 'tests/**'
+      - 'setup.py'
+      - 'pyproject.toml'
+      - '.github/workflows/build_python_library.yml'
 
 jobs:
   build-python:
