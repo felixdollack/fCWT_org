@@ -81,7 +81,7 @@ machine = platform.machine().lower()
 
 if IS_MACOS:
     libraries = ["fftw3fmac", "fftw3f_ompmac"]
-    comp_args = ["-O3", "-Xpreprocessor", "-fopenmp"]
+    comp_args = ["-O3"]
 
     # Only Intel can use AVX.
     if IS_X86:
@@ -91,14 +91,22 @@ if IS_MACOS:
     if not omp_prefix.exists():
         omp_prefix = Path("/usr/local/opt/libomp")
 
-    include_dirs.append(str(omp_prefix / "include"))
-    library_dirs.append(str(omp_prefix / "lib"))
-    omp_library = str(omp_prefix / "lib" / "libomp.dylib")
-    link_args = [
-        "-L" + str(omp_prefix / "lib"),
-        "-Wl,-needed_library," + omp_library,
-        "-Wl,-rpath," + str(omp_prefix / "lib"),
-    ]
+    if omp_prefix.exists():
+        comp_args += ["-Xpreprocessor", "-fopenmp"]
+        include_dirs.append(str(omp_prefix / "include"))
+        library_dirs.append(str(omp_prefix / "lib"))
+        omp_library = str(omp_prefix / "lib" / "libomp.dylib")
+        link_args = [
+            "-L" + str(omp_prefix / "lib"),
+            "-Wl,-needed_library," + omp_library,
+            "-Wl,-rpath," + str(omp_prefix / "lib"),
+        ]
+    else:
+        # No libomp to link against. The bundled libs/libomp.a is x86_64-only,
+        # so on Apple Silicon without Homebrew there is no OpenMP runtime at
+        # all; build the single-threaded path rather than failing to link.
+        # nthreads is ignored in this configuration.
+        comp_args.append("-DSINGLE_THREAD")
 
 if IS_LINUX:
     libraries = ["fftw3fl", "fftw3f_ompl", "gomp"]
